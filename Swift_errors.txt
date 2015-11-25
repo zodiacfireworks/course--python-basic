@@ -1,0 +1,2 @@
+# List of cordinates with issues in parsing server response
+#         ra         dec
