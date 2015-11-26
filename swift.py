@@ -2,7 +2,7 @@ from urllib.request import urlopen
 from numpy import loadtxt
 from bs4 import BeautifulSoup
 from datetime import datetime
-
+from time import sleep
 
 inFileName = "table_SWIFT_no_MATCH_SDSS.txt"
 
@@ -52,9 +52,13 @@ errFileHandler.write("{0:>11s}".format("ra"))
 errFileHandler.write("{0:>12s}".format("dec"))
 
 startTime = datetime.now()
+attempt_limit = 3
 
 for id, (ra, dec) in positions:
     progress = (id+1)*100.0/nPos
+    error_pair = None
+    attempt = 0
+    waitTime = 5
 
     data = {
         "searchpos": "{0:},{1:}".format(ra, dec),  # coordinates as pairs
@@ -73,9 +77,60 @@ for id, (ra, dec) in positions:
 
     url = "http://www.swift.ac.uk/1SXPS/processUL.php"
 
-    request = urlopen(url, data=dataStr)
+    print("***", "Searching arround position ({0:},{1:})".format(ra, dec), flush=True)
+    while attempt < attempt_limit:
+        try:
+            request = urlopen(url, data=dataStr, timeout=10)
+            print("*** SUCCESS      :", "Server connection stablished", flush=True)
+            break
+        except:
+            attempt += 1
+            waitTime *= attempt
+            sleep_seconds = 0
 
-    textResponse = request.read()
+            while sleep_seconds < waitTime:
+                remainingTime = waitTime - sleep_seconds
+
+                print("*** ERROR        :", "Server connection failure. Attempt {0:}. Retry in {1:0>2d} s".format(attempt, remainingTime), end="", flush=True)
+                sleep(1)
+
+                while sleep_seconds < waitTime:
+                    sleep_seconds += 1
+                    remainingTime = waitTime - sleep_seconds
+                    # print(remainingTime, flush=True)
+                    print("\b\b\b\b{0:0>2d} s".format(remainingTime), end="", flush=True)
+                    sleep(1)
+                print(15*"\b" + 15*" ", flush=True)
+
+    if attempt == attempt_limit:
+        if error_pair != (ra, dec):
+            error_pair = (ra, dec)
+
+            errFileHandler.write("{0:>12.6f}".format(ra))
+            errFileHandler.write("{0:>12.6f}".format(dec))
+            errFileHandler.write("\n")
+
+            elapsedTime = datetime.now() - startTime
+
+            print("*** ERROR        :", "Server connection not stablished", flush=True)
+            print("*** Elapsed Time : {0:}".format(elapsedTime), flush=True)
+            print("*** Progress     : {0:>.3f}%".format(progress), flush=True)
+            print("", flush=True)
+        continue
+
+    try:
+        textResponse = request.read()
+    except:
+        if error_pair != (ra, dec):
+            error_pair = (ra, dec)
+            errFileHandler.write("{0:>12.6f}".format(ra))
+            errFileHandler.write("{0:>12.6f}".format(dec))
+            errFileHandler.write("\n")
+            print("*** ERROR        :", "An unexpected error occurred while getting server response", flush=True)
+            print("*** Elapsed Time : {0:}".format(elapsedTime), flush=True)
+            print("*** Progress     : {0:>.3f}%".format(progress), flush=True)
+            print("", flush=True)
+        continue
 
     textResponse = textResponse.decode("utf-8").replace("</tr>\n</tr>", "</tr>")
     textResponse = textResponse.replace("</tr>\n</tr>", "</tr>")
@@ -89,16 +144,9 @@ for id, (ra, dec) in positions:
         if block["id"] == "ResultDiv":
             resultContainer = block
 
-            elapsedTime = datetime.now() - startTime
-
-            print("")
-            print("*** Progress    : {0:>.3f}%".format(progress))
-            print("*** Elapsed Time: {0:}".format(elapsedTime))
-            print("***", resultContainer.findAll("p")[0].getText())
-
             if resultContainer.findAll("table"):
 
-                print("*** SUCCESS ***:", "Getting server response")
+                print("*** SUCCESS      :", "Getting server response", flush=True)
                 for table in resultContainer.findAll("table"):
                     mainGroup = None
 
@@ -107,7 +155,7 @@ for id, (ra, dec) in positions:
                         nCols = len(cols)
 
                         if nCols > 1:
-                            error_pair = None
+                            # error_pair = None
                             try:
                                 if nCols == 7:
                                     SwiftRecord = {
@@ -193,11 +241,17 @@ for id, (ra, dec) in positions:
                                     errFileHandler.write("{0:>12.6f}".format(ra))
                                     errFileHandler.write("{0:>12.6f}".format(dec))
                                     errFileHandler.write("\n")
-                                print("*** ERROR   ***:", "Parsing server response")
+                                print("*** ERROR        :", "Parsing server response", flush=True)
 
-                            print("*** SUCCESS ***:", "Parsing and saving server response")
+                            print("*** SUCCESS      :", "Parsing and saving server response", flush=True)
 
             else:
-                print("*** ERROR   ***:", resultContainer.findAll("p")[1].getText())
+                print("*** ERROR        :", resultContainer.findAll("p")[1].getText(), flush=True)
+
+            elapsedTime = datetime.now() - startTime
+
+            print("*** Elapsed Time : {0:}".format(elapsedTime), flush=True)
+            print("*** Progress     : {0:>.3f}%".format(progress), flush=True)
+            print("", flush=True)
 
 outFileHandler.close()
