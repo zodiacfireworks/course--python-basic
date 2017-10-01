@@ -1,3 +1,0 @@
-# List of cordinates with issues in parsing server response
-#         ra         dec  153.267710    7.181185
-  239.590610   37.769760
