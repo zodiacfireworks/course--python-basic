@@ -21,7 +21,7 @@ En este curso se opta por emplear Python como lenguaje dada su madurez y su pres
 
 * **Publico objetivo**: Público en general que deseen iniciar en la progrmación con el lenguaje de programación Python.
 
-## Licencia
+## 3 Licencia
 
 Todos los recursos en este repositorio, desarrollados por mi, están a dispisición
 bajo la licencia MIT (Vea el archivo LICENSE)
