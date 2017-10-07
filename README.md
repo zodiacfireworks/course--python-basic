@@ -19,7 +19,7 @@ En este curso se opta por emplear Python como lenguaje dada su madurez y su pres
 
 * **Duración**: 15 horas.
 
-* **Publico objetivo**: Público en general que deseen iniciar en la progrmación con el lenguaje de programación Python.
+* **Publico objetivo**: Público en general que deseen iniciar en la progrmación con Python.
 
 ## 3 Licencia
 
